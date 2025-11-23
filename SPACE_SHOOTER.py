@@ -49,6 +49,8 @@ def draw_text(text, font, text_col, x, y):
     img = font.render(text, True, text_col)
     screen.blit(img, (x, y))
 
+game_state = "menu"
+
 class spaceship(pygame.sprite.Sprite):
     def __init__(self, x, y, health=3):
         pygame.sprite.Sprite.__init__(self)
@@ -189,6 +191,25 @@ def spawn_alien():
             alien = aliens(x, y)
             alien_group.add(alien)
 
+def reset_game():
+    global countdown, last_countdown, game_over, player
+    bullet_group.empty()
+    alien_group.empty()
+    alien_bullets_group.empty()
+    explosion_group.empty()
+    spaceship_group.empty()
+
+    spawn_alien()
+
+    player = spaceship(screen_width / 2, screen_height - 100)
+    spaceship_group.add(player)
+
+    countdown = 3
+    last_countdown = pygame.time.get_ticks()
+    game_over = 0
+    
+    return countdown, game_over
+
 spawn_alien()
 
 
@@ -200,7 +221,50 @@ while run:
 
     clock.tick(fps)
 
-    draw_bg()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mx, my = pygame.mouse.get_pos()
+
+            if game_state == "menu":
+                if 200 <= mx <= 400 and 300 <= my <= 360:
+                    game_state = "playing"
+                if 200 <= mx <= 400 and 380 <= my <= 440:
+                    run = False
+                if 500 <= mx <= 590 and 20 <= my <= 60:
+                    game_state = "credit"
+
+            if game_state == "credit":
+                if 20 <= mx <= 120 and 20 <= my <= 60:
+                    game_state = "menu"
+            
+            if game_state == "playing" and game_over != 0:
+                if 200 <= mx <= 400 and 400 <= my <= 460:
+                    countdown, game_over = reset_game()
+                if 200 <= mx <= 400 and 480 <= my <= 540:
+                    game_state = "menu"
+                    countdown, game_over = reset_game()
+
+    if game_state == "menu":
+        draw_bg()
+        draw_text("SPACE SHOOTER", font40, white, int(screen_width / 2 - 149.5), 225)
+        draw_text("START", font30, white, int(screen_width / 2 - 50), 315)
+        draw_text("QUIT", font30, white, int(screen_width / 2 - 45), 355)
+        draw_text("CREDITS", font30, white, 450, 25)
+        pygame.display.update()
+        continue
+
+    if game_state == "credit":
+        draw_bg()
+        draw_text("CREDITS", font40, white, int(screen_width / 2 - 80), 100)
+        draw_text("Game developed by NatanKriwil", font30, white, 100, 200)
+        draw_text("BACK", font30, white, 25, 25)
+        pygame.display.update()
+        continue
+
+    if game_state == "playing":
+        draw_bg()
 
     if countdown == 0:
 
@@ -224,9 +288,12 @@ while run:
             alien_bullets_group.update()
         else:
             if game_over == -1:
-                draw_text("GAME OVER!", font40, white, int(screen_width / 2 - 100), int(screen_height / 2 + 50))
+                draw_text("GAME OVER!", font40, white, int(screen_width / 2 - 125), int(screen_height / 2 - 50))
             if game_over == 1:
-                draw_text("YOU WIN!", font40, white, int(screen_width / 2 - 100), int(screen_height / 2 + 50))
+                draw_text("YOU WIN!", font40, white, int(screen_width / 2 - 100), int(screen_height / 2 - 50))
+
+            draw_text("RESTART", font30, white, int(screen_width / 2 - 60), 440)
+            draw_text("BACK", font30, white, int(screen_width / 2 - 40), 480)
 
     if countdown > 0:
         draw_text("GET READY!", font40, white, int(screen_width / 2 - 110), int(screen_height / 2 + 50))
