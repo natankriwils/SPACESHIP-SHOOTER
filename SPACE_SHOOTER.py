@@ -49,6 +49,14 @@ def draw_text(text, font, text_col, x, y):
     img = font.render(text, True, text_col)
     screen.blit(img, (x, y))
 
+def draw_button(text, rect, font, text_col, rect_col=(255,255,255)):
+    # outline
+    pygame.draw.rect(screen, rect_col, rect, 2)
+    # draw centered text
+    img = font.render(text, True, text_col)
+    text_rect = img.get_rect(center=rect.center)
+    screen.blit(img, text_rect)
+
 game_state = "menu"
 
 class spaceship(pygame.sprite.Sprite):
@@ -221,6 +229,16 @@ while run:
 
     clock.tick(fps)
 
+    btn_w = 200
+    btn_h = 60
+    center_x = int(screen_width / 2)
+    start_rect = pygame.Rect(center_x - btn_w // 2, 315 - btn_h // 2, btn_w, btn_h)
+    quit_rect = pygame.Rect(center_x - btn_w // 2, 380 - btn_h // 2, btn_w, btn_h)
+    credits_rect = pygame.Rect(screen_width - 130, 20, 120, 40)
+    back_rect = pygame.Rect(20, 20, 100, 40)
+    restart_rect = pygame.Rect(center_x - btn_w // 2, 440 - btn_h // 2, btn_w, btn_h)
+    go_back_rect = pygame.Rect(center_x - btn_w // 2, 520 - btn_h // 2, btn_w, btn_h)
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
@@ -228,30 +246,30 @@ while run:
             mx, my = pygame.mouse.get_pos()
 
             if game_state == "menu":
-                if 200 <= mx <= 400 and 300 <= my <= 360:
+                if start_rect.collidepoint(mx, my):
                     game_state = "playing"
-                if 200 <= mx <= 400 and 380 <= my <= 440:
+                if quit_rect.collidepoint(mx, my):
                     run = False
-                if 500 <= mx <= 590 and 20 <= my <= 60:
+                if credits_rect.collidepoint(mx, my):
                     game_state = "credit"
 
             if game_state == "credit":
-                if 20 <= mx <= 120 and 20 <= my <= 60:
+                if back_rect.collidepoint(mx, my):
                     game_state = "menu"
             
             if game_state == "playing" and game_over != 0:
-                if 200 <= mx <= 400 and 400 <= my <= 460:
+                if restart_rect.collidepoint(mx, my):
                     countdown, game_over = reset_game()
-                if 200 <= mx <= 400 and 480 <= my <= 540:
+                if go_back_rect.collidepoint(mx, my):
                     game_state = "menu"
                     countdown, game_over = reset_game()
 
     if game_state == "menu":
         draw_bg()
         draw_text("SPACE SHOOTER", font40, white, int(screen_width / 2 - 149.5), 225)
-        draw_text("START", font30, white, int(screen_width / 2 - 50), 315)
-        draw_text("QUIT", font30, white, int(screen_width / 2 - 45), 355)
-        draw_text("CREDITS", font30, white, 450, 25)
+        draw_button("START", start_rect, font30, white)
+        draw_button("QUIT", quit_rect, font30, white)
+        draw_button("CREDITS", credits_rect, font30, white)
         pygame.display.update()
         continue
 
@@ -259,7 +277,7 @@ while run:
         draw_bg()
         draw_text("CREDITS", font40, white, int(screen_width / 2 - 80), 100)
         draw_text("Game developed by NatanKriwil", font30, white, 100, 200)
-        draw_text("BACK", font30, white, 25, 25)
+        draw_button("BACK", back_rect, font30, white)
         pygame.display.update()
         continue
 
@@ -287,13 +305,7 @@ while run:
             alien_group.update()
             alien_bullets_group.update()
         else:
-            if game_over == -1:
-                draw_text("GAME OVER!", font40, white, int(screen_width / 2 - 125), int(screen_height / 2 - 50))
-            if game_over == 1:
-                draw_text("YOU WIN!", font40, white, int(screen_width / 2 - 100), int(screen_height / 2 - 50))
-
-            draw_text("RESTART", font30, white, int(screen_width / 2 - 60), 440)
-            draw_text("BACK", font30, white, int(screen_width / 2 - 40), 480)
+            pass
 
     if countdown > 0:
         draw_text("GET READY!", font40, white, int(screen_width / 2 - 110), int(screen_height / 2 + 50))
@@ -311,9 +323,16 @@ while run:
     alien_bullets_group.draw(screen)
     explosion_group.draw(screen)
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
+    if countdown == 0 and game_over != 0:
+        overlay = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 150))
+        screen.blit(overlay, (0, 0))
+        if game_over == -1:
+            draw_text("GAME OVER!", font40, white, int(screen_width / 2 - 125), int(screen_height / 2 - 50))
+        if game_over == 1:
+            draw_text("YOU WIN!", font40, white, int(screen_width / 2 - 100), int(screen_height / 2 - 50))
+        draw_button("RESTART", restart_rect, font30, white)
+        draw_button("BACK", go_back_rect, font30, white)
 
     pygame.display.update()
 
