@@ -49,10 +49,8 @@ def draw_text(text, font, text_col, x, y):
     img = font.render(text, True, text_col)
     screen.blit(img, (x, y))
 
-def draw_button(text, rect, font, text_col, rect_col=(255,255,255)):
-    # outline
-    pygame.draw.rect(screen, rect_col, rect, 2)
-    # draw centered text
+def draw_button(text, rect, font, text_col, rect_col=(255,255,255)):
+    pygame.draw.rect(screen, rect_col, rect, 2)
     img = font.render(text, True, text_col)
     text_rect = img.get_rect(center=rect.center)
     screen.blit(img, text_rect)
