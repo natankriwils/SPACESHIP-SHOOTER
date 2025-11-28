@@ -1,9 +1,9 @@
 import pygame
 from pygame import mixer
 from pygame.locals import *
-pygame.init()
 import random
 
+pygame.init()
 pygame.mixer.pre_init(44100, -16, 2, 512)
 mixer.init()
 
@@ -52,7 +52,7 @@ paused = False
 
 wave_transition = False
 wave_transition_timer = 0
-wave_transition_delay = 3000 
+wave_transition_delay = 3000
 
 red = (255, 0, 0)
 green = (0, 255, 0)
@@ -68,9 +68,7 @@ def draw_text(text, font, text_col, x, y):
     screen.blit(img, (x, y))
 
 def draw_button(text, rect, font, text_col, rect_col=(255,255,255)):
-
     pygame.draw.rect(screen, rect_col, rect, 2)
-
     img = font.render(text, True, text_col)
     text_rect = img.get_rect(center=rect.center)
     screen.blit(img, text_rect)
@@ -80,24 +78,24 @@ game_state = "menu"
 class spaceship(pygame.sprite.Sprite):
     def __init__(self, x, y, health=3):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("Tugas/SPACESHIP SHOOTER/img/spaceship.png")
+        self.image = pygame.image.load("Tugas/SPACESHIP SHOOTER/img/spaceship.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.rect.center = [x, y]
         self.health_start = health
         self.health_remaining = health
         self.last_shot = pygame.time.get_ticks()
+        self.mask = pygame.mask.from_surface(self.image)
 
     def update(self):
         speed = 8
         cooldown = 300
-        game_over = 0
 
         key = pygame.key.get_pressed()
-        if key[pygame.K_LEFT] and self.rect.left > 0: 
+        if key[pygame.K_LEFT] and self.rect.left > 0:
             self.rect.x -= speed
-        if key[pygame.K_RIGHT] and self.rect.right < screen_width: 
+        if key[pygame.K_RIGHT] and self.rect.right < screen_width:
             self.rect.x += speed
-            
+
         time_now = pygame.time.get_ticks()
         if key[pygame.K_SPACE] and time_now - self.last_shot > cooldown:
             laser_sound.play()
@@ -111,8 +109,9 @@ class spaceship(pygame.sprite.Sprite):
             exp = explosion(self.rect.centerx, self.rect.centery, 3)
             explosion_group.add(exp)
             self.kill()
-            game_over = -1
-        return game_over
+            return -1
+
+        return 0
 
     def draw_health_bar(self):
         try:
@@ -132,33 +131,36 @@ class spaceship(pygame.sprite.Sprite):
             pass
 
 class bullets(pygame.sprite.Sprite):
-    def __init__(self, x, y,):
+    def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("Tugas/SPACESHIP SHOOTER/img/bullet.png")
+        self.image = pygame.image.load("Tugas/SPACESHIP SHOOTER/img/bullet.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.rect.center = [x, y]
+        self.mask = pygame.mask.from_surface(self.image)
 
     def update(self):
-            self.rect.y -= 5
-            if self.rect.bottom < 0:
-                self.kill()
-            hits = pygame.sprite.spritecollide(self, alien_group, True)
-            if hits:
-                global score, current_wave
-                score += 10 * current_wave
-                self.kill()
-                explosion_sound.play()
-                exp = explosion(self.rect.centerx, self.rect.centery, 2)
-                explosion_group.add(exp)
+        self.rect.y -= 5
+        if self.rect.bottom < 0:
+            self.kill()
+            return
+        hits = pygame.sprite.spritecollide(self, alien_group, True)
+        if hits:
+            global score, current_wave
+            score += 10 * current_wave
+            self.kill()
+            explosion_sound.play()
+            exp = explosion(self.rect.centerx, self.rect.centery, 2)
+            explosion_group.add(exp)
 
 class aliens(pygame.sprite.Sprite):
-    def __init__(self, x, y,):
+    def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("Tugas/SPACESHIP SHOOTER/img/alien.png")
+        self.image = pygame.image.load("Tugas/SPACESHIP SHOOTER/img/alien.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.rect.center = [x, y]
         self.move_counter = 0
         self.move_direction = 1
+        self.mask = pygame.mask.from_surface(self.image)
 
     def update(self):
         self.rect.x += self.move_direction
@@ -168,27 +170,29 @@ class aliens(pygame.sprite.Sprite):
             self.move_counter *= self.move_direction
 
 class alien_bullets(pygame.sprite.Sprite):
-    def __init__(self, x, y,):
+    def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("Tugas/SPACESHIP SHOOTER/img/alien_bullet.png")
+        self.image = pygame.image.load("Tugas/SPACESHIP SHOOTER/img/alien_bullet.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.rect.center = [x, y]
+        self.mask = pygame.mask.from_surface(self.image)
 
     def update(self):
-            self.rect.y += 2
-            if self.rect.top > screen_height:
-                self.kill()
-            hits = pygame.sprite.spritecollide(self, spaceship_group, False, pygame.sprite.collide_mask)
-            if hits:
-                global score
-                for ship in hits:
-                    explosion2_sound.play()
-                    if hasattr(ship, 'health_remaining'):
-                        ship.health_remaining -= 1
-                        score = max(0, score - (5 * current_wave))
-                        exp = explosion(self.rect.centerx, self.rect.centery, 1)
-                        explosion_group.add(exp)
-                self.kill()
+        self.rect.y += 2
+        if self.rect.top > screen_height:
+            self.kill()
+            return
+        hits = pygame.sprite.spritecollide(self, spaceship_group, False, pygame.sprite.collide_mask)
+        if hits:
+            global score
+            for ship in hits:
+                explosion2_sound.play()
+                if hasattr(ship, 'health_remaining'):
+                    ship.health_remaining -= 1
+                    score = max(0, score - (5 * current_wave))
+                    exp = explosion(self.rect.centerx, self.rect.centery, 1)
+                    explosion_group.add(exp)
+            self.kill()
 
 class explosion(pygame.sprite.Sprite):
     def __init__(self, x, y, size=1):
@@ -226,10 +230,6 @@ bullet_group = pygame.sprite.Group()
 alien_group = pygame.sprite.Group()
 alien_bullets_group = pygame.sprite.Group()
 explosion_group = pygame.sprite.Group()
-
-def spawn_alien():
-    spawn_alien_for_wave(current_wave)
-
 
 def spawn_alien_for_wave(wave):
     """Spawn aliens based on the wave number and wave_configs."""
@@ -277,12 +277,10 @@ def reset_game():
     countdown = 3
     last_countdown = pygame.time.get_ticks()
     game_over = 0
-    
+
     return countdown, game_over
 
 spawn_alien_for_wave(current_wave)
-
-
 player = spaceship(screen_width / 2, screen_height - 120)
 spaceship_group.add(player)
 
@@ -319,15 +317,15 @@ while run:
                 if credits_rect.collidepoint(mx, my):
                     game_state = "credit"
 
-            if game_state == "credit":
+            elif game_state == "credit":
                 if back_rect.collidepoint(mx, my):
                     game_state = "menu"
-            
-            if game_state == "playing":
-                if not paused:
+
+            elif game_state == "playing":
+                if not paused and game_over == 0:
                     if pause_rect.collidepoint(mx, my):
                         paused = not paused
-                else:
+                elif paused:
                     if pause_resume_rect.collidepoint(mx, my):
                         paused = False
                     if pause_restart_rect.collidepoint(mx, my):
@@ -337,15 +335,16 @@ while run:
                         game_state = "menu"
                         countdown, game_over = reset_game()
                         paused = False
-                if game_over != 0:
+                if countdown == 0 and game_over != 0:
                     if restart_rect.collidepoint(mx, my):
                         countdown, game_over = reset_game()
                     if go_back_rect.collidepoint(mx, my):
                         game_state = "menu"
                         countdown, game_over = reset_game()
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_p:
-                if game_state == "playing":
+                if game_state == "playing" and game_over == 0:
                     paused = not paused
 
     if game_state == "menu":
@@ -364,6 +363,7 @@ while run:
         draw_button("BACK", back_rect, font30, white)
         pygame.display.update()
         continue
+
     if game_state == "playing":
         draw_bg()
 
@@ -376,10 +376,12 @@ while run:
                 time_now = pygame.time.get_ticks()
 
                 if time_now - last_alien_shot > alien_cooldown and len(alien_bullets_group) < 5 and len(alien_group) > 0:
-                    attacking_alien = random.choice(alien_group.sprites())
-                    alien_bullet = alien_bullets(attacking_alien.rect.centerx, attacking_alien.rect.bottom)
-                    alien_bullets_group.add(alien_bullet)
-                    last_alien_shot = time_now
+                    aliens_list = alien_group.sprites()
+                    if aliens_list:
+                        attacking_alien = random.choice(aliens_list)
+                        alien_bullet = alien_bullets(attacking_alien.rect.centerx, attacking_alien.rect.bottom)
+                        alien_bullets_group.add(alien_bullet)
+                        last_alien_shot = time_now
 
                 if len(alien_group) == 0:
                     if current_wave < max_waves:
@@ -396,60 +398,60 @@ while run:
                     alien_group.update()
                     alien_bullets_group.update()
                 else:
-                    pass
+                    paused = False
 
-    if wave_transition and not paused:
-        time_now = pygame.time.get_ticks()
-        if time_now - wave_transition_timer >= wave_transition_delay:
-            current_wave += 1
-            spawn_alien_for_wave(current_wave)
-            bullet_group.empty()
-            alien_bullets_group.empty()
-            wave_transition = False
-            countdown = 3 
+            if wave_transition and not paused:
+                time_now = pygame.time.get_ticks()
+                if time_now - wave_transition_timer >= wave_transition_delay:
+                    current_wave += 1
+                    spawn_alien_for_wave(current_wave)
+                    bullet_group.empty()
+                    alien_bullets_group.empty()
+                    wave_transition = False
+                    countdown = 3
 
-    if countdown > 0:
-        draw_text("GET READY!", font40, white, int(screen_width / 2 - 110), int(screen_height / 2 + 50))
-        draw_text(str(countdown), font40, white, int(screen_width / 2 - 10), int(screen_height / 2 + 100))
-        countdown_timer = pygame.time.get_ticks()
-        if countdown_timer - last_countdown > 1000:
-            countdown -= 1
-            last_countdown = countdown_timer
+        if countdown > 0:
+            draw_text("GET READY!", font40, white, int(screen_width / 2 - 110), int(screen_height / 2 + 50))
+            draw_text(str(countdown), font40, white, int(screen_width / 2 - 10), int(screen_height / 2 + 100))
+            countdown_timer = pygame.time.get_ticks()
+            if countdown_timer - last_countdown > 1000:
+                countdown -= 1
+                last_countdown = countdown_timer
 
-    if wave_transition and not paused:
-        draw_text("PREPARING NEXT WAVE...", font30, white, int(screen_width / 2 - 150), int(screen_height / 2))
+        if wave_transition and not paused:
+            draw_text("PREPARING NEXT WAVE...", font30, white, int(screen_width / 2 - 150), int(screen_height / 2))
 
-    if not paused:
-        explosion_group.update()
+        if not paused:
+            explosion_group.update()
 
-    spaceship_group.draw(screen)
-    for ship in spaceship_group.sprites():
-        if hasattr(ship, 'draw_health_bar'):
-            ship.draw_health_bar()
-    bullet_group.draw(screen)
-    alien_group.draw(screen)
-    alien_bullets_group.draw(screen)
-    explosion_group.draw(screen)
+        spaceship_group.draw(screen)
+        for ship in spaceship_group.sprites():
+            if hasattr(ship, 'draw_health_bar'):
+                ship.draw_health_bar()
+        bullet_group.draw(screen)
+        alien_group.draw(screen)
+        alien_bullets_group.draw(screen)
+        explosion_group.draw(screen)
 
-    if countdown == 0 and game_over != 0:
-        overlay = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 150))
-        screen.blit(overlay, (0, 0))
-        if game_over == -1:
-            draw_text("GAME OVER!", font40, white, int(screen_width / 2 - 125), int(screen_height / 2 - 50))
-        if game_over == 1:
-            draw_text("YOU WIN!", font40, white, int(screen_width / 2 - 100), int(screen_height / 2 - 50))
-        draw_button("RESTART", restart_rect, font30, white)
-        draw_button("BACK", go_back_rect, font30, white)
+        if countdown == 0 and game_over != 0:
+            overlay = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 150))
+            screen.blit(overlay, (0, 0))
+            if game_over == -1:
+                draw_text("GAME OVER!", font40, white, int(screen_width / 2 - 125), int(screen_height / 2 - 50))
+            if game_over == 1:
+                draw_text("YOU WIN!", font40, white, int(screen_width / 2 - 100), int(screen_height / 2 - 50))
+            draw_button("RESTART", restart_rect, font30, white)
+            draw_button("BACK", go_back_rect, font30, white)
 
-    if paused and game_state == "playing":
-        overlay = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 150))
-        screen.blit(overlay, (0, 0))
-        draw_button("RESUME", pause_resume_rect, font30, white)
-        draw_button("RESTART", pause_restart_rect, font30, white)
-        draw_button("MENU", pause_menu_rect, font30, white)
+        if paused and game_state == "playing":
+            overlay = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 150))
+            screen.blit(overlay, (0, 0))
+            draw_button("RESUME", pause_resume_rect, font30, white)
+            draw_button("RESTART", pause_restart_rect, font30, white)
+            draw_button("MENU", pause_menu_rect, font30, white)
 
-    pygame.display.update()
+        pygame.display.update()
 
 pygame.quit()
